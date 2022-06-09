@@ -1,3 +1,10 @@
+## 4.4.1
+
+#### iOS
+
+- add audio requestAuthorization
+- Fix asynchronous processing of audio file export
+
 ## 4.4.0
 
 #### Desktop (Linux, macOS, and Windows)
