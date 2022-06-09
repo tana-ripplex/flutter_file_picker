@@ -3,6 +3,8 @@
 #import "ImageUtils.h"
 
 @import DKImagePickerController;
+@import MediaPlayer;
+
 
 @interface FilePickerPlugin() <DKImageAssetExporterObserver>
 @property (nonatomic) FlutterResult result;
@@ -301,9 +303,26 @@
         }
     });
 
+    [MPMediaLibrary requestAuthorization:^(MPMediaLibraryAuthorizationStatus permissionStatus) {
+        switch (permissionStatus) {
+            case MPMediaLibraryAuthorizationStatusAuthorized:
+                {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        [[self viewControllerWithWindow:nil] presentViewController:self.audioPickerController animated:YES completion:nil];
+                         });
+                }
+                break;
+            default:
+
+                self.result(nil);
+                self.result = nil;
+                break;
+        }
+    }
+    ];
     
-    [[self viewControllerWithWindow:nil] presentViewController:self.audioPickerController animated:YES completion:nil];
 }
+   
 
 - (void) handleResult:(id) files {
     _result([FileUtils resolveFileInfo: [files isKindOfClass: [NSArray class]] ? files : @[files] withData:self.loadDataToMemory]);
