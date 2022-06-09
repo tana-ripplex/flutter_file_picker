@@ -2,6 +2,8 @@
 #import "FileUtils.h"
 #import "ImageUtils.h"
 
+#import <Flutter/Flutter.h>
+
 @import DKImagePickerController;
 @import MediaPlayer;
 
@@ -313,8 +315,10 @@
                 }
                 break;
             default:
-
-                self.result(nil);
+                self.result([FlutterError errorWithCode:@"audio_access_denied"
+                                                message:@"User denied the audio access request."
+                                                details:nil]);
+                
                 self.result = nil;
                 break;
         }
