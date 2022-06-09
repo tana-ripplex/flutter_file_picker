@@ -114,50 +114,46 @@
     
     exporter.outputURL = exportURL;
     
-    dispatch_queue_t queue = dispatch_queue_create("exportQueue", 0);
-    
-    dispatch_async(queue, ^{
+    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
         
-        dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+    [exporter exportAsynchronouslyWithCompletionHandler:
+     ^{
         
-        [exporter exportAsynchronouslyWithCompletionHandler:
-         ^{
-            
-            switch (exporter.status)
+        switch (exporter.status)
+        {
+            case AVAssetExportSessionStatusFailed:
             {
-                case AVAssetExportSessionStatusFailed:
-                {
-                    NSError *exportError = exporter.error;
-                    Log(@"AVAssetExportSessionStatusFailed: %@", exportError);
-                    break;
-                }
-                case AVAssetExportSessionStatusCompleted:
-                {
-                    Log(@"AVAssetExportSessionStatusCompleted");
-                    @autoreleasepool {
-                        dispatch_semaphore_signal(semaphore);
-                    }
-                    
-                    break;
-                }
-                case AVAssetExportSessionStatusCancelled:
-                {
-                    Log(@"AVAssetExportSessionStatusCancelled");
-                    @autoreleasepool {
-                        dispatch_semaphore_signal(semaphore);
-                    }
-                    break;
-                }
-                default:
-                {
-                    Log(@"didn't get export status");
-                    break;
-                }
+                NSError *exportError = exporter.error;
+                Log(@"AVAssetExportSessionStatusFailed: %@", exportError);
+                break;
             }
-        }];
-        
-        dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
-    });
+            case AVAssetExportSessionStatusCompleted:
+            {
+                Log(@"AVAssetExportSessionStatusCompleted");
+                @autoreleasepool {
+                    dispatch_semaphore_signal(semaphore);
+                }
+                
+                break;
+            }
+            case AVAssetExportSessionStatusCancelled:
+            {
+                Log(@"AVAssetExportSessionStatusCancelled");
+                @autoreleasepool {
+                    dispatch_semaphore_signal(semaphore);
+                }
+                break;
+            }
+            default:
+            {
+                Log(@"didn't get export status");
+                break;
+            }
+        }
+    }];
+    
+    dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+   
     return exportURL;
 }
 

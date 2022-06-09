@@ -541,19 +541,25 @@ didPickDocumentsAtURLs:(NSArray<NSURL *> *)urls{
     
     NSMutableArray<NSURL *> * urls = [[NSMutableArray alloc] initWithCapacity:numberOfItems];
     
-    for(MPMediaItemCollection * item in [mediaItemCollection items]) {
-        NSURL * cachedAsset = [FileUtils exportMusicAsset: [item valueForKey:MPMediaItemPropertyAssetURL] withName: [item valueForKey:MPMediaItemPropertyTitle]];
-        [urls addObject: cachedAsset];
-    }
+    dispatch_queue_t queue = dispatch_queue_create("exportQueue", 0);
+      
+    dispatch_async(queue, ^{
+      for(MPMediaItemCollection * item in [mediaItemCollection items]) {
+          NSURL * cachedAsset = [FileUtils exportMusicAsset: [item valueForKey:MPMediaItemPropertyAssetURL] withName: [item valueForKey:MPMediaItemPropertyTitle]];
+          [urls addObject: cachedAsset];
+      }
+
+      if(self->_eventSink != nil) {
+          self->_eventSink([NSNumber numberWithBool:NO]);
+      }
+
+      if(urls.count == 0) {
+          Log(@"Couldn't retrieve the audio file path, either is not locally downloaded or the file is DRM protected.");
+      }
+      [self handleResult:urls];
+
+    });
     
-    if(_eventSink != nil) {
-        _eventSink([NSNumber numberWithBool:NO]);
-    }
-    
-    if(urls.count == 0) {
-        Log(@"Couldn't retrieve the audio file path, either is not locally downloaded or the file is DRM protected.");
-    }
-    [self handleResult:urls];
 }
 
 #pragma mark - Actions canceled
