@@ -305,33 +305,42 @@
         }
     });
 
-    if([MPMediaLibrary authorizationStatus] ==MPMediaLibraryAuthorizationStatusAuthorized){
-        dispatch_async(dispatch_get_main_queue(), ^{
-            [[self viewControllerWithWindow:nil] presentViewController:self.audioPickerController animated:YES completion:nil];
-             });
-        return;
-    }
+    MPMediaLibraryAuthorizationStatus status = [MPMediaLibrary authorizationStatus];
 
-    [MPMediaLibrary requestAuthorization:^(MPMediaLibraryAuthorizationStatus permissionStatus) {
-        switch (permissionStatus) {
-            case MPMediaLibraryAuthorizationStatusAuthorized:
-                {
-                    dispatch_async(dispatch_get_main_queue(), ^{
-                        [[self viewControllerWithWindow:nil] presentViewController:self.audioPickerController animated:YES completion:nil];
-                         });
-                }
-                break;
-            default:
-                self.result([FlutterError errorWithCode:@"audio_access_denied"
-                                                message:@"User denied the audio access request."
-                                                details:nil]);
-                
-                self.result = nil;
-                break;
+    if(status == MPMediaLibraryAuthorizationStatusAuthorized){
+        [self presentAudioPicker];
+    }else if(status != MPMediaLibraryAuthorizationStatusNotDetermined){
+        [self handleAudioPickerErrorResult];
+    }else{
+        [MPMediaLibrary requestAuthorization:^(MPMediaLibraryAuthorizationStatus permissionStatus) {
+            switch (permissionStatus) {
+                case MPMediaLibraryAuthorizationStatusAuthorized:
+                    {
+                        dispatch_async(dispatch_get_main_queue(), ^{
+                            [self presentAudioPicker];
+                        });
+                    }
+                    break;
+                default:
+                    {
+                        [self handleAudioPickerErrorResult];
+                    }
+                    break;
+            }
         }
+        ];
     }
-    ];
-    
+}
+
+- (void) presentAudioPicker{
+    [[self viewControllerWithWindow:nil] presentViewController:self.audioPickerController animated:YES completion:nil];
+}
+
+- (void) handleAudioPickerErrorResult{
+        self.result([FlutterError errorWithCode:@"audio_access_denied"
+                                        message:@"User denied the audio access request."
+                                        details:nil]);
+        self.result = nil;
 }
    
 
