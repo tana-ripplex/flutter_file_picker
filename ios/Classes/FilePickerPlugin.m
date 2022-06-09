@@ -305,6 +305,13 @@
         }
     });
 
+    if([MPMediaLibrary authorizationStatus] ==MPMediaLibraryAuthorizationStatusAuthorized){
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [[self viewControllerWithWindow:nil] presentViewController:self.audioPickerController animated:YES completion:nil];
+             });
+        return;
+    }
+
     [MPMediaLibrary requestAuthorization:^(MPMediaLibraryAuthorizationStatus permissionStatus) {
         switch (permissionStatus) {
             case MPMediaLibraryAuthorizationStatusAuthorized:
