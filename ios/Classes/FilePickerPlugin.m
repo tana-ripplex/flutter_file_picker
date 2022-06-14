@@ -304,6 +304,15 @@
             Log("Exporting assets, this operation may take a while if remote (iCloud) assets are being cached.");
         }
     });
+    
+#if TARGET_OS_SIMULATOR
+    Log(@"AudioPicker not presented on Simulator");
+    self.result([FlutterError errorWithCode:@"audio_picker_not_presented_on_simulator"
+                                    message:@"audio picker error."
+                                    details:nil]);
+    self.result = nil;
+    return;
+#endif
 
     MPMediaLibraryAuthorizationStatus status = [MPMediaLibrary authorizationStatus];
 
@@ -312,9 +321,7 @@
     }else if(status != MPMediaLibraryAuthorizationStatusNotDetermined){
         [self handleAudioPickerErrorResult];
     }else{
-        __block BOOL presented = false;
         [MPMediaLibrary requestAuthorization:^(MPMediaLibraryAuthorizationStatus permissionStatus) {
-            presented = true;
             switch (permissionStatus) {
                 case MPMediaLibraryAuthorizationStatusAuthorized:
                     {
@@ -331,16 +338,6 @@
             }
         }];
         
-
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 3.0 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
-            if(!presented){
-                Log(@"AudioPicker requestAuthorization not presented");
-                self.result([FlutterError errorWithCode:@"audio_request_authorization_not_presented"
-                                                message:@"error."
-                                                details:nil]);
-                self.result = nil;
-            }
-        });
     }
 }
 
