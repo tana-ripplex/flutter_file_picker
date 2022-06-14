@@ -298,7 +298,9 @@
     self.audioPickerController.presentationController.delegate = self;
     self.audioPickerController.showsCloudItems = NO;
     self.audioPickerController.allowsPickingMultipleItems = isMultiPick;
-    
+    if (@available(iOS 9.2, *)) {
+        self.audioPickerController.showsItemsWithProtectedAssets = NO;
+    }
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
         if([self viewControllerWithWindow:nil].presentedViewController == nil){
             Log("Exporting assets, this operation may take a while if remote (iCloud) assets are being cached.");
