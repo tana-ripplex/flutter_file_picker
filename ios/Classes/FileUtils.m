@@ -100,6 +100,13 @@
 
 + (NSURL*) exportMusicAsset:(NSString*) url withName:(NSString *)name error:(NSError* _Nullable*) error {
     
+    if(url == nil){
+        Log(@"Couldn't retrieve the audio file path, either is not locally downloaded or the file is DRM protected.");
+        *error = [NSError errorWithDomain:@"FileUtilsAVAssetExportSession" code:1 userInfo:nil];
+        return nil;
+        
+    }
+    
     AVURLAsset *songAsset = [AVURLAsset URLAssetWithURL: (NSURL*)url options:nil];
     AVAssetExportSession *exporter = [[AVAssetExportSession alloc] initWithAsset: songAsset
                                                                       presetName:AVAssetExportPresetAppleM4A];
