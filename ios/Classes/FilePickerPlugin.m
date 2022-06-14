@@ -312,7 +312,9 @@
     }else if(status != MPMediaLibraryAuthorizationStatusNotDetermined){
         [self handleAudioPickerErrorResult];
     }else{
+        __block BOOL presented = false;
         [MPMediaLibrary requestAuthorization:^(MPMediaLibraryAuthorizationStatus permissionStatus) {
+            presented = true;
             switch (permissionStatus) {
                 case MPMediaLibraryAuthorizationStatusAuthorized:
                     {
@@ -327,13 +329,39 @@
                     }
                     break;
             }
-        }
-        ];
+        }];
+        
+
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 3.0 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+            if(!presented){
+                Log(@"AudioPicker requestAuthorization not presented");
+                self.result([FlutterError errorWithCode:@"audio_request_authorization_not_presented"
+                                                message:@"error."
+                                                details:nil]);
+                self.result = nil;
+            }
+        });
     }
 }
 
 - (void) presentAudioPicker{
-    [[self viewControllerWithWindow:nil] presentViewController:self.audioPickerController animated:YES completion:nil];
+    __block BOOL presented = false;
+
+    [[self viewControllerWithWindow:nil] presentViewController:self.audioPickerController animated:YES completion:^{
+        presented = true;
+    }];
+    
+    // Check when the Apple Music app is not included
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 3.0 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+        if(!presented){
+            Log(@"AudioPicker not presented");
+            self.result([FlutterError errorWithCode:@"audio_access_not_presented"
+                                            message:@"error."
+                                            details:nil]);
+            self.result = nil;
+        }
+    });
+    
 }
 
 - (void) handleAudioPickerErrorResult{
@@ -565,7 +593,19 @@ didPickDocumentsAtURLs:(NSArray<NSURL *> *)urls{
       
     dispatch_async(queue, ^{
       for(MPMediaItemCollection * item in [mediaItemCollection items]) {
-          NSURL * cachedAsset = [FileUtils exportMusicAsset: [item valueForKey:MPMediaItemPropertyAssetURL] withName: [item valueForKey:MPMediaItemPropertyTitle]];
+          NSError* error = nil;
+          NSURL * cachedAsset = [FileUtils exportMusicAsset:[item valueForKey:MPMediaItemPropertyAssetURL]
+                                                   withName:[item valueForKey:MPMediaItemPropertyTitle]
+                                                      error:&error];
+          if(cachedAsset == nil){
+              self.result([FlutterError errorWithCode:[NSString stringWithFormat:@"file_picker_error: %ld", error.code]
+                                              message:error.domain
+                                              details:error.localizedDescription]);
+              self.result = nil;
+              return;
+          }
+          
+          
           [urls addObject: cachedAsset];
       }
 

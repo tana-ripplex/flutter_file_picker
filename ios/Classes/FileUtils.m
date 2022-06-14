@@ -98,7 +98,8 @@
     return files;
 }
 
-+ (NSURL*) exportMusicAsset:(NSString*) url withName:(NSString *)name {
++ (NSURL*) exportMusicAsset:(NSString*) url withName:(NSString *)name error:(NSError* _Nullable*) error {
+    
     AVURLAsset *songAsset = [AVURLAsset URLAssetWithURL: (NSURL*)url options:nil];
     AVAssetExportSession *exporter = [[AVAssetExportSession alloc] initWithAsset: songAsset
                                                                       presetName:AVAssetExportPresetAppleM4A];
@@ -113,8 +114,8 @@
     }
     
     exporter.outputURL = exportURL;
-    
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+    __block NSError* exportError = nil;
         
     [exporter exportAsynchronouslyWithCompletionHandler:
      ^{
@@ -123,37 +124,40 @@
         {
             case AVAssetExportSessionStatusFailed:
             {
-                NSError *exportError = exporter.error;
+                exportError = exporter.error;
                 Log(@"AVAssetExportSessionStatusFailed: %@", exportError);
                 break;
             }
             case AVAssetExportSessionStatusCompleted:
             {
                 Log(@"AVAssetExportSessionStatusCompleted");
-                @autoreleasepool {
-                    dispatch_semaphore_signal(semaphore);
-                }
-                
                 break;
             }
             case AVAssetExportSessionStatusCancelled:
             {
                 Log(@"AVAssetExportSessionStatusCancelled");
-                @autoreleasepool {
-                    dispatch_semaphore_signal(semaphore);
-                }
                 break;
             }
             default:
             {
+                exportError = [NSError errorWithDomain:@"FileUtilsAVAssetExportSession" code:0 userInfo:nil];
                 Log(@"didn't get export status");
                 break;
             }
         }
+        
+        @autoreleasepool {
+            dispatch_semaphore_signal(semaphore);
+        }
     }];
     
     dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
-   
+    
+    if(exportError){
+        *error = exportError;
+        return nil;
+    }
+    
     return exportURL;
 }
 
