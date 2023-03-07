@@ -15,7 +15,7 @@ A new flutter plugin project.
   s.source_files = 'Classes/**/*'
   s.public_header_files = 'Classes/**/*.h'
   s.dependency 'Flutter'
-  s.dependency 'DKImagePickerController/PhotoGallery'
+  s.dependency 'DKImagePickerController/PhotoGallery',  '~> 4.3.4'
   s.ios.deployment_target = '8.0'
 end
 
